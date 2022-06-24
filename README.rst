@@ -31,7 +31,7 @@ An unofficial `AWS CDK v2`_ Construct Library for Secure REST APIs.
 Secure Rest Api
 ---------------
 
-The ``SecureRestApi`` construct creates a (public) REST API secured behind an API key value, which needs to be
+The ``SecureRestApi`` construct creates a (public) REST API secured behind an API key, which needs to be
 specified in the ``x-api-key`` header for all requests.
 
 Features
