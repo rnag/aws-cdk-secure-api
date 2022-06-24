@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import logging
-from typing import Literal
 
 from .client_cache import ClientCache
 
@@ -53,10 +52,10 @@ class SSM(ClientCache):
     def put_param(self, name: str,
                   value: str,
                   description: str | None = None,
-                  type: Literal['String', 'StringList', 'SecureString'] = 'SecureString',
+                  type='SecureString',
                   key_id: str | None = None,
-                  tier: Literal['Standard', 'Advanced', 'Intelligent-Tiering'] = 'Standard',
-                  data_type: Literal['text', 'aws:ec2:image'] = 'text',
+                  tier='Standard',
+                  data_type='text',
                   overwrite=False) -> str:
         """
         Create/update a parameter in SSM Parameter Store.
