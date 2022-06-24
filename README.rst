@@ -82,7 +82,8 @@ A few workarounds can be used for this:
 
 1. The environment variable ``AWS_PROFILE`` can be set before calling the ``cdk`` tool.
 2. The ``profile`` attribute can be passed in to the ``config`` parameter for ``SecureRestApi``.
-3. The ``profile`` context variable can be passed in to the ``cdk`` tool, as shown below::
+3. The ``profile`` context variable can be passed in to the ``cdk`` tool,
+   as shown below::
 
        cdk deploy --profile my-profile -c profile=my-profile
 
@@ -108,6 +109,10 @@ Stack Outputs
 The following *stack outputs* will additionally be added to the CDK stack:
 
 * ``APIEndpoint`` - The base endpoint of the Secure REST API.
+
+  * *Note:* this output will not show up if ``override_endpoint_name`` is disabled
+    in the ``config`` parameter.
+
 * ``APIKey`` - The API key for the endpoint, which needs to be specified
   as a value in an HTTP request's ``x-api-key`` header.
 

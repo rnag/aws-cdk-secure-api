@@ -21,26 +21,23 @@ class APIKeyCache:
 
     __slots__ = (
         '_account',
-        '_id',
         '_stack_name',
     )
 
-    def __init__(self, construct: apigateway.IRestApi, construct_id: str):
+    def __init__(self, construct: apigateway.IRestApi):
         self._account = construct.env.account
-        self._id = construct_id
         self._stack_name = construct.stack.stack_name
 
     def get_api_key(self) -> str | None:
         """Retrieve the cached API key value for the stack's construct."""
         try:
-            return _keys[self._account][self._stack_name][self._id]
+            return _keys[self._account][self._stack_name]
         except KeyError:
             return None
 
     def save_api_key(self, api_key: str):
         """Store (cache) the API key value for the stack's construct."""
-        _keys.setdefault(self._account, {}) \
-             .setdefault(self._stack_name, {})[self._id] = api_key
+        _keys.setdefault(self._account, {})[self._stack_name] = api_key
 
         with _cache.open('w') as out_file:
             json.dump(_keys, out_file)
