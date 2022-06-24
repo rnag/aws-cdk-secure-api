@@ -1,9 +1,9 @@
 """
-AWS CDK Secure API - A CDK (v2) Construct Library for Secure Rest APIs
+AWS CDK Secure API - A CDK (v2) Construct Library for Secure REST APIs
 """
 
 __title__ = 'aws-cdk-secure-api'
-__description__ = 'A CDK (v2) Construct Library for Secure Rest APIs'
+__description__ = 'A CDK (v2) Construct Library for Secure REST APIs'
 __url__ = 'https://github.com/rnag/aws-cdk-secure-api'
 __version__ = '0.1.0'
 __author__ = 'Ritvik Nag'

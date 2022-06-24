@@ -3,7 +3,7 @@
 import pytest
 
 
-from aws_cdk_secure_api import aws_cdk_secure_api
+from aws_cdk_secure_api import SecureRestApi
 
 
 @pytest.fixture
@@ -16,7 +16,7 @@ def response():
     # return requests.get('https://github.com/audreyr/cookiecutter-pypackage')
 
 
-def test_content(response):
+def test_create_api(response):
     """Sample pytest test function with the pytest fixture as an argument."""
-    # from bs4 import BeautifulSoup
-    # assert 'GitHub' in BeautifulSoup(response.content).title.string
+    # TODO
+    SecureRestApi
