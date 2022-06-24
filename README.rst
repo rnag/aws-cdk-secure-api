@@ -53,8 +53,8 @@ Usage
 
 The ``SecureRestApi`` construct represents a Secure REST API in Amazon API Gateway.
 
-Use ``add_resource``, ``add_lambda_methods``, and ``add_methods`` to
-configure the API model, as shown below.
+    Use ``add_resource``, ``add_lambda_methods``, and ``add_methods`` to
+    configure the API model, as shown below.
 
 .. code:: python3
 
