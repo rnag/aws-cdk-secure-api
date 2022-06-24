@@ -40,7 +40,7 @@ Features
 * A CDK Construct which sets up a `RestApi`_ secured behind an API key.
 * An API key is `auto-generated`_ and stored in SSM Parameter Store (which is
   a free service) as needed.
-* Local cache for the API key, so that API calls are not needed for future
+* Local cache for the API key, so that API calls are not needed in future
   CDK deployments.
 * Helper methods for ``SecureRestApi``, to make it easier to
   integrate a method for an AWS Lambda function for example.
