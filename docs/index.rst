@@ -1,5 +1,5 @@
-Welcome to AWS CDK Secure API's documentation!
-======================================
+AWS CDK Secure API
+==================
 
 .. toctree::
    :maxdepth: 2
