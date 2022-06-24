@@ -191,7 +191,7 @@ class SecureRestApi(apigateway.RestApi):
             raise Exception('At least one HTTP method is required.')
 
         for method in methods:
-            http_meth: str = getattr(method, 'value', method)
+            http_meth: str = getattr(method, 'name', method)
 
             self.root.add_method(
                 http_meth, target,

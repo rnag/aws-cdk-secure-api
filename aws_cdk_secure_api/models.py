@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from enum import Enum
+from enum import Enum, auto
 
 from aws_cdk import aws_apigateway as apigateway
 
@@ -38,12 +38,13 @@ class Config:
     )
 
 
+# noinspection PyArgumentList
 class Http(Enum):
     """Enum class to represent an HTTP method."""
-    OPTIONS = 'options'
-    GET = 'get'
-    HEAD = 'head'
-    PUT = 'put'
-    POST = 'post'
-    DELETE = 'delete'
-    PATCH = 'patch'
+    OPTIONS = auto()
+    GET = auto()
+    HEAD = auto()
+    PUT = auto()
+    POST = auto()
+    DELETE = auto()
+    PATCH = auto()
