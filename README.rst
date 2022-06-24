@@ -34,6 +34,13 @@ Secure Rest Api
 The ``SecureRestApi`` construct creates a (public) REST API secured behind an API key, which needs to be
 specified in the ``x-api-key`` header for all requests.
 
+Install
+-------
+
+.. code-block:: console
+
+    pip install aws-cdk-secure-api
+
 Features
 --------
 
