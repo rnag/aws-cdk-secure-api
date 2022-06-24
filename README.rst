@@ -1,5 +1,5 @@
 ==================
-AWS CDK Secure API
+aws-cdk-secure-api
 ==================
 
 
