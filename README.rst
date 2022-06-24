@@ -65,16 +65,21 @@ The ``SecureRestApi`` construct represents a Secure REST API in Amazon API Gatew
 
 .. code:: python3
 
-    from aws_cdk_secure_api import SecureRestApi
+    from aws_cdk_secure_api import Http, SecureRestApi
     from aws_cdk import (aws_apigateway as apigw, aws_lambda as lambda_)
 
     get_handler = lambda_.Function(self, 'lambda1', runtime=lambda_.Runtime.PYTHON_3_9, ...)
     put_handler = lambda_.Function(self, 'lambda2', runtime=lambda_.Runtime.PYTHON_3_9, ...)
 
-    api = SecureRestApi(self, 'api', rest_api_name='My Secure Service')
+    api = SecureRestApi(
+        self, 'api',
+        rest_api_name='My Secure Service',
+        # optional: specify a deployment stage
+        deploy_options=apigw.StageOptions(stage_name='dev')
+    )
 
-    api.add_lambda_methods(get_handler, 'GET')
-    api.add_lambda_methods(put_handler, 'PUT', 'POST')
+    api.add_lambda_methods(get_handler, 'GET')                # GET /
+    api.add_lambda_methods(put_handler, Http.PUT, Http.POST)  # PUT /, POST /
 
 
 AWS Profile
