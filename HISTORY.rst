@@ -2,6 +2,17 @@
 History
 =======
 
+0.2.0 (2023-05-17)
+------------------
+
+**Bugfixes**
+
+* Make code compatible with *Python 3.11*.
+
+**Features and Improvements**
+
+* Add *3.11* to the list of supported Python versions.
+
 0.1.1 (2022-06-24)
 ------------------
 

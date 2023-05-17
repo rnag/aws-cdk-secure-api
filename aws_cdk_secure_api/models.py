@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum, auto
 
 from aws_cdk import aws_apigateway as apigateway
@@ -28,15 +28,19 @@ class Config:
     override_endpoint_name = True
 
     # Throttle settings to associate with the Usage Plan for the REST API
-    throttle: apigateway.ThrottleSettings = apigateway.ThrottleSettings(
-        burst_limit=500,
-        rate_limit=1000
+    throttle: apigateway.ThrottleSettings = field(
+        default_factory=lambda: apigateway.ThrottleSettings(
+            burst_limit=500,
+            rate_limit=1000,
+        ),
     )
 
     # Quota settings to associate with the Usage Plan for the REST API
-    quota: apigateway.QuotaSettings = apigateway.QuotaSettings(
-        limit=10000000,
-        period=apigateway.Period.MONTH
+    quota: apigateway.QuotaSettings = field(
+        default_factory=lambda: apigateway.QuotaSettings(
+            limit=10000000,
+            period=apigateway.Period.MONTH,
+        ),
     )
 
 
