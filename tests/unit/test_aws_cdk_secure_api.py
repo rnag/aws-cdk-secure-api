@@ -2,7 +2,7 @@
 
 import pytest
 
-
+from aws_cdk import App, Stack
 from aws_cdk_secure_api import SecureRestApi
 
 
@@ -18,5 +18,9 @@ def response():
 
 def test_create_api(response):
     """Sample pytest test function with the pytest fixture as an argument."""
-    # TODO
-    SecureRestApi
+    app = App()
+    stack = Stack(app, 'my-stack')
+
+    _api = SecureRestApi(stack, 'my-api', test=True)
+
+    # TODO add assertions etc.

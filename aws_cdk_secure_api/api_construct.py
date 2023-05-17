@@ -6,9 +6,15 @@ import os
 from aws_cdk import (
     CfnResource,
     CfnOutput,
-    aws_lambda as lambda_,
-    aws_apigateway as apigateway,
 )
+from aws_cdk.aws_apigateway import (
+    IResource,
+    Integration,
+    LambdaIntegration,
+    RestApi,
+    UsagePlanPerApiStage,
+)
+from aws_cdk.aws_lambda import IFunction
 from constructs import Construct
 
 from .aws import SecretsManager, SSM
@@ -16,7 +22,7 @@ from .cache import APIKeyCache
 from .models import Config, Http
 
 
-class SecureRestApi(apigateway.RestApi):
+class SecureRestApi(RestApi):
     """Represents a Secure REST API in Amazon API Gateway.
 
     By default, methods in the REST API requires an ``x-api-key`` header in
@@ -31,23 +37,32 @@ class SecureRestApi(apigateway.RestApi):
     By default, the API will automatically be deployed and accessible from a
     public endpoint.
 
+    If ``test`` is enabled, then a live API call to AWS SSM (Parameter Store)
+    won't be performed on an initial run, and instead a dummy API key value
+    is used.
+
     Example::
 
-        >>> state_machine = stepfunctions.StateMachine(self, "MyStateMachine",
-        ...     state_machine_type=stepfunctions.StateMachineType.EXPRESS,
-        ...     definition=stepfunctions.Chain.start(stepfunctions.Pass(self, "Pass"))
-        >>> )
+        >>> from aws_cdk_secure_api import SecureRestApi
+        >>> from aws_cdk.aws_apigateway import StepFunctionsIntegration
+        >>> from aws_cdk.aws_stepfunctions import Chain, Pass, StateMachine, StateMachineType
 
-        >>> api = aws_cdk_secure_api.SecureRestApi(self, "Api",
+        >>> state_machine = StateMachine(self, "MyStateMachine",
+        ...     state_machine_type=StateMachineType.EXPRESS,
+        ...     definition=Chain.start(Pass(self, "Pass"))
+        >>> )
+        >>> api = SecureRestApi(self, "Api",
         ...           rest_api_name="MyApi"
         ...       )
-        >>> api.add_methods(apigateway.StepFunctionsIntegration.start_execution(state_machine),
+        >>> api.add_methods(StepFunctionsIntegration.start_execution(state_machine),
         ...                 "GET", "PUT")
 
     """
 
     def __init__(self, scope: Construct, construct_id: str,
-                 config: Config | None = None, **kwargs) -> None:
+                 config: Config | None = None,
+                 test: bool = False,
+                 **kwargs) -> None:
 
         super().__init__(scope, construct_id, **kwargs)
 
@@ -59,42 +74,47 @@ class SecureRestApi(apigateway.RestApi):
 
         stack_name = self.stack.stack_name
 
-        cache = APIKeyCache(self)
-        api_key_value: str = cache.get_api_key()
+        # True if a CDK stack is created for a local test case, for example
+        if test:
+            api_key_value: str = 'test123'
 
-        if api_key_value is None:
-            aws_profile = (config.profile
-                           or os.getenv('AWS_PROFILE')
-                           or self.node.try_get_context('profile'))
-
-            # Use SSM Parameter Store to store / retrieve the API Key, which will need
-            # to be included in the 'x-api-key' header in requests to our endpoint.
-            #
-            # Refs:
-            #   - https://docs.aws.amazon.com/cdk/latest/guide/get_ssm_value.html
-            #   - https://bobbyhadz.com/blog/aws-cdk-ssm-parameters
-            ssm = SSM(config.region, aws_profile)
-            param_name = f'/{stack_name}/api-key'
-
-            api_key_value: str = ssm.get_param(param_name)
+        else:  # else, continue as normal
+            cache = APIKeyCache(self)
+            api_key_value: str = cache.get_api_key()
 
             if api_key_value is None:
-                # Create the SSM Parameter, as it does not exist
+                aws_profile = (config.profile
+                               or os.getenv('AWS_PROFILE')
+                               or self.node.try_get_context('profile'))
 
-                # Generate the API key using `secretsmanager:GetRandomPassword`
-                sm = SecretsManager(config.region, aws_profile)
-                api_key_value = sm.generate_api_key(40)
-                # Create the new SSM Parameter (SecureString) with the
-                # auto-generated API key.
-                print(
-                    f'[{param_name}] Creating new SSM Parameter...'
-                )
-                ssm.put_param(
-                    param_name, api_key_value,
-                    key_id=config.key_id,
-                )
+                # Use SSM Parameter Store to store / retrieve the API Key, which will need
+                # to be included in the 'x-api-key' header in requests to our endpoint.
+                #
+                # Refs:
+                #   - https://docs.aws.amazon.com/cdk/latest/guide/get_ssm_value.html
+                #   - https://bobbyhadz.com/blog/aws-cdk-ssm-parameters
+                ssm = SSM(config.region, aws_profile)
+                param_name = f'/{stack_name}/api-key'
 
-            cache.save_api_key(api_key_value)
+                api_key_value: str = ssm.get_param(param_name)
+
+                if api_key_value is None:
+                    # Create the SSM Parameter, as it does not exist
+
+                    # Generate the API key using `secretsmanager:GetRandomPassword`
+                    sm = SecretsManager(config.region, aws_profile)
+                    api_key_value = sm.generate_api_key(40)
+                    # Create the new SSM Parameter (SecureString) with the
+                    # auto-generated API key.
+                    print(
+                        f'[{param_name}] Creating new SSM Parameter...'
+                    )
+                    ssm.put_param(
+                        param_name, api_key_value,
+                        key_id=config.key_id,
+                    )
+
+                cache.save_api_key(api_key_value)
 
         # Create API key and add it to usage plan for the API Gateway
         #
@@ -112,7 +132,7 @@ class SecureRestApi(apigateway.RestApi):
             usage_plan_name,
             name=usage_plan_name,
             api_stages=[
-                apigateway.UsagePlanPerApiStage(
+                UsagePlanPerApiStage(
                     api=self,
                     stage=self.deployment_stage,
                 ),
@@ -143,48 +163,105 @@ class SecureRestApi(apigateway.RestApi):
             export_name=f'x-api-key:{stack_name}'
         )
 
-    def add_lambda_methods(self, handler: lambda_.IFunction,
-                           *methods: Http | str):
+    def add_resource_and_lambda_methods(self, handler: IFunction,
+                                        resource_name: str,
+                                        *methods: Http | str):
         """
-        Adds a lambda function the API Gateway, and associates it with one or
-        more HTTP method(s).
+        Adds a new resource -- at the `resource_name` path -- to the API Gateway.
+
+        Also adds a lambda function the API Gateway, and associates it with one or
+        more HTTP method(s), for the new resource.
 
         Example::
 
             >>> from aws_cdk_secure_api import SecureRestApi
-            >>> from aws_cdk import (aws_apigateway as apigw, aws_lambda as lambda_)
+            >>> from aws_cdk.aws_lambda import Function, Runtime
             >>> api = SecureRestApi(self, 'api', rest_api_name='My Secure Service')
-            >>> handler1 = lambda_.Function(self, 'lambda1', runtime=lambda_.Runtime.PYTHON_3_9, ...)
-            >>> handler2 = lambda_.Function(self, 'lambda2', runtime=lambda_.Runtime.PYTHON_3_9, ...)
+            >>> handler1 = Function(self, 'lambda1', runtime=Runtime.PYTHON_3_10, ...)
+            >>> handler2 = Function(self, 'lambda2', runtime=Runtime.PYTHON_3_10, ...)
+            >>> api.add_resource_and_lambda_methods(handler1, '/path1', 'GET')
+            >>> api.add_resource_and_lambda_methods(handler2, '/path2', 'PUT', 'POST')
+
+        """
+        resource = self.root.add_resource(resource_name.lstrip('/'))
+        self.add_lambda_methods(handler, *methods, resource=resource)
+
+    def add_lambda_methods(self, handler: IFunction,
+                           *methods: Http | str,
+                           resource: IResource | None = None,
+                           ):
+        """
+        Adds a lambda function the API Gateway, and associates it with one or
+        more HTTP method(s).
+
+        The `resource` parameter determines which API resources to associate the
+        HTTP method(s) with - if not passed, it defaults to the "root" resource
+        for the API -- i.e. under the `/` path.
+
+        Example::
+
+            >>> from aws_cdk_secure_api import SecureRestApi
+            >>> from aws_cdk.aws_lambda import Function, Runtime
+            >>> api = SecureRestApi(self, 'api', rest_api_name='My Secure Service')
+            >>> handler1 = Function(self, 'lambda1', runtime=Runtime.PYTHON_3_10, ...)
+            >>> handler2 = Function(self, 'lambda2', runtime=Runtime.PYTHON_3_10, ...)
             >>> api.add_lambda_methods(handler1, 'GET')
             >>> api.add_lambda_methods(handler2, 'PUT', 'POST')
 
+        Example with a Resource Path::
+
+            >>> from aws_cdk_secure_api import SecureRestApi
+            >>> from aws_cdk.aws_lambda import Function, Runtime
+            >>> api = SecureRestApi(self, 'api', rest_api_name='My Secure Service')
+            >>> handler1 = Function(self, 'lambda1', runtime=Runtime.PYTHON_3_10, ...)
+            >>> handler2 = Function(self, 'lambda2', runtime=Runtime.PYTHON_3_10, ...)
+            >>> my_resource = api.root.add_resource('my-path-here')
+            >>> api.add_lambda_methods(handler1, 'GET', resource=my_resource)
+            >>> api.add_lambda_methods(handler2, 'PUT', 'POST', resource=my_resource)
+
         """
-        lambda_integration = apigateway.LambdaIntegration(
+        lambda_integration = LambdaIntegration(
             handler,
             request_templates={'application/json': '{ "statusCode": "200" }'}
         )
 
-        self.add_methods(lambda_integration, *methods)
+        self.add_methods(lambda_integration, *methods, resource=resource)
 
-    def add_methods(self, target: apigateway.Integration,
-                    *methods: Http | str):
+    def add_methods(self, target: Integration,
+                    *methods: Http | str,
+                    resource: IResource | None = None,
+                    ):
         """
         Adds one or more HTTP method(s) and a target (typically a
-        `LambdaIntegration`) to the API root resource.
+        `LambdaIntegration`) to an API `resource` - which defaults
+        to the API "root" resource.
 
         By default, an API key is required for the new method(s).
 
         Example::
 
             >>> from aws_cdk_secure_api import SecureRestApi
-            >>> from aws_cdk import (aws_apigateway as apigw, aws_lambda as lambda_)
+            >>> from aws_cdk.aws_apigateway import LambdaIntegration
+            >>> from aws_cdk.aws_lambda import Function, Runtime
             >>> api = SecureRestApi(self, 'api', rest_api_name='My Secure Service')
-            >>> handler = lambda_.Function(self, 'my-function', runtime=lambda_.Runtime.PYTHON_3_9, ...)
-            >>> integration = apigw.LambdaIntegration(
+            >>> handler = Function(self, 'my-function', runtime=Runtime.PYTHON_3_10, ...)
+            >>> integration = LambdaIntegration(
             ...   handler, request_templates={'application/json': '{ "statusCode": "200" }'}
             ... )
             >>> api.add_methods(integration, 'GET', 'POST')
+
+        Example with a Resource Path::
+
+            >>> from aws_cdk_secure_api import SecureRestApi
+            >>> from aws_cdk.aws_apigateway import LambdaIntegration
+            >>> from aws_cdk.aws_lambda import Function, Runtime
+            >>> api = SecureRestApi(self, 'api', rest_api_name='My Secure Service')
+            >>> handler = Function(self, 'my-function', runtime=Runtime.PYTHON_3_10, ...)
+            >>> integration = LambdaIntegration(
+            ...   handler, request_templates={'application/json': '{ "statusCode": "200" }'}
+            ... )
+            >>> my_resource = api.root.add_resource('my-path-here')
+            >>> api.add_methods(integration, 'GET', 'POST', resource=my_resource)
 
         """
         if not methods:
@@ -193,7 +270,7 @@ class SecureRestApi(apigateway.RestApi):
         for method in methods:
             http_meth: str = getattr(method, 'name', method)
 
-            self.root.add_method(
+            (resource or self.root).add_method(
                 http_meth, target,
-                api_key_required=True
+                api_key_required=True,
             )

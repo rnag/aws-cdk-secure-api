@@ -63,24 +63,42 @@ The ``SecureRestApi`` construct represents a Secure REST API in Amazon API Gatew
     Use ``add_resource``, ``add_lambda_methods``, and ``add_methods`` to
     configure the API model, as shown below.
 
+**Using a root resource**:
+
 .. code:: python3
 
-    from aws_cdk_secure_api import Http, SecureRestApi
-    from aws_cdk import (aws_apigateway as apigw, aws_lambda as lambda_)
+    from aws_cdk.aws_apigateway import StageOptions
+    from aws_cdk.aws_lambda import Function, Runtime
 
-    get_handler = lambda_.Function(self, 'lambda1', runtime=lambda_.Runtime.PYTHON_3_9, ...)
-    put_handler = lambda_.Function(self, 'lambda2', runtime=lambda_.Runtime.PYTHON_3_9, ...)
+    from aws_cdk_secure_api import Http, SecureRestApi
+
+    # noinspection PyTypeChecker
+    py_runtime: Runtime = Runtime.PYTHON_3_10
+
+    get_handler = Function(self, 'lambda1', runtime=py_runtime, ...)
+    put_handler = Function(self, 'lambda2', runtime=py_runtime, ...)
 
     api = SecureRestApi(
         self, 'api',
         rest_api_name='My Secure Service',
         # optional: specify a deployment stage
-        deploy_options=apigw.StageOptions(stage_name='dev')
+        deploy_options=StageOptions(stage_name='dev')
     )
 
-    api.add_lambda_methods(get_handler, 'GET')                # GET /
+    api.add_lambda_methods(get_handler, 'GET')  # GET /
     api.add_lambda_methods(put_handler, Http.PUT, Http.POST)  # PUT /, POST /
 
+**Using a custom-named resource**:
+
+    Replace above usage of ``add_lambda_methods`` with
+    ``add_resource_and_lambda_methods``, as shown below.
+
+.. code:: python3
+
+    # GET /path1
+    api.add_resource_and_lambda_methods(get_handler, '/path1', 'GET')
+    # PUT /path2, POST /path2
+    api.add_resource_and_lambda_methods(put_handler, '/path2', Http.PUT, Http.POST)
 
 AWS Profile
 -----------

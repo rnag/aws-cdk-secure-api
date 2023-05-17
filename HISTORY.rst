@@ -2,6 +2,22 @@
 History
 =======
 
+0.3.0 (2023-05-17)
+------------------
+
+**Features and Improvements**
+
+* Add a helper method ``add_resource_and_lambda_methods``, to set up a new
+  API resource, a lambda integration, and setup HTTP method(s) on the
+  new resource at the same time.
+* Update other helper methods -- such as ``add_lambda_methods`` -- to accept
+  an optional ``resource`` parameter, which defaults to the "root" API
+  resource (``/``) by default.
+* Add ``test`` parameter (boolean) to ``SecureRestApi`` -- if enabled,
+  then a live API call to AWS SSM (Parameter Store)
+  won't be performed on an initial run, and instead a dummy API key value
+  is used.
+
 0.2.0 (2023-05-17)
 ------------------
 
