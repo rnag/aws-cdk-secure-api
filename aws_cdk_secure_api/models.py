@@ -44,6 +44,13 @@ class Config:
     )
 
 
+@dataclass
+class IAMConfig(Config):
+    # secret name to hold the IAM User Credentials (Access Keys) for
+    # invoking the Rest API.
+    secret_name: str | None = None
+
+
 # noinspection PyArgumentList
 class Http(Enum):
     """Enum class to represent an HTTP method."""
