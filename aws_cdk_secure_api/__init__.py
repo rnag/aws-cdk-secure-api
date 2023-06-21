@@ -18,13 +18,15 @@ For full documentation and more advanced usage, please see
 __all__ = [
     'Config',
     'Http',
+    'IAMConfig',
+    'IAMSecureRestApi',
     'SecureRestApi',
 ]
 
 import logging
 
-from .api_construct import SecureRestApi
-from .models import Config, Http
+from .api_construct import IAMSecureRestApi, SecureRestApi
+from .models import Config, Http, IAMConfig
 
 # Set up logging to ``/dev/null`` like a library is supposed to.
 # http://docs.python.org/3.3/howto/logging.html#configuring-logging-for-a-library
