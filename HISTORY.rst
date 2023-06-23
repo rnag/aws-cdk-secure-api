@@ -2,6 +2,22 @@
 History
 =======
 
+0.5.0 (2023-06-23)
+------------------
+
+**Features and Improvements**
+
+* Add option ``use_role`` in ``IAMConfig``, which when enabled will set up
+  an IAM Role (with permissions to invoke the API) to be assumed by the IAM User,
+  instead of directly attaching an IAM Policy to said User.
+
+0.4.0 (2023-06-22)
+------------------
+
+**Features and Improvements**
+
+* Add IAM Authentication via the new ``IAMSecureRestApi`` construct.
+
 0.3.0 (2023-05-17)
 ------------------
 

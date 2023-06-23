@@ -61,7 +61,7 @@ Features
 
   * `AWS IAM authentication`_
 
-    * An IAM User (and Policy) is created with minimal permissions to call / invoke the API.
+    * An IAM User (and Policy/Role) is created with minimal permissions to call / invoke the API.
 
     * The IAM User Credentials (Access Keys) are stored in AWS Secrets Manager.
 
@@ -148,6 +148,12 @@ which requires IAM Authorization.
     # PUT /path2, POST /path2
     api.add_resource_and_lambda_methods(put_handler, '/path2', Http.PUT, Http.POST)
 
+To use an IAM Role instead of attaching a Policy directly to User:
+
+.. code:: python3
+
+    IAMConfig(use_role=True)
+
 AWS Profile
 -----------
 
@@ -196,6 +202,10 @@ The following *stack outputs* will additionally be added to the CDK stack:
 
 * ``APIIAMUserCredentials`` - The URL link (to input in a browser) for the Secret
   stored in AWS Secrets Manager containing the AWS IAM Credentials for invoking the REST API.
+
+* ``APIIAMRoleARN`` - The ARN of the IAM Role, used in an `AssumeRole`_ API call with the IAM User credentials.
+
+.. _`AssumeRole`: https://docs.aws.amazon.com/STS/latest/APIReference/API_AssumeRole.html
 
 Credits
 -------

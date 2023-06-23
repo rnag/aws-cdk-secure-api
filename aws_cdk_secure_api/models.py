@@ -50,6 +50,11 @@ class IAMConfig(Config):
     # invoking the Rest API.
     secret_name: str | None = None
 
+    # set up an IAM Role that can be assumed by the IAM User via
+    # the `sts:AssumeRole` API, instead of attaching an IAM Policy
+    # to the User
+    use_role: bool = False
+
 
 # noinspection PyArgumentList
 class Http(Enum):

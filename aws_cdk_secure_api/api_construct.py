@@ -4,7 +4,7 @@ from __future__ import annotations
 import os
 from urllib.parse import quote as url_encode
 
-from aws_cdk import CfnOutput, CfnResource, RemovalPolicy, SecretValue
+from aws_cdk import CfnOutput, CfnResource, Duration, RemovalPolicy, SecretValue
 
 from aws_cdk.aws_apigateway import (
     AuthorizationType,
@@ -14,7 +14,8 @@ from aws_cdk.aws_apigateway import (
     RestApi,
     UsagePlanPerApiStage,
 )
-from aws_cdk.aws_iam import AccessKey, Policy, PolicyStatement, User
+from aws_cdk.aws_iam import (AccessKey, ArnPrincipal, CompositePrincipal,
+                             Policy, PolicyStatement, Role, User)
 from aws_cdk.aws_lambda import IFunction
 from aws_cdk.aws_secretsmanager import Secret
 from constructs import Construct
@@ -375,6 +376,26 @@ class IAMSecureRestApi(RestApi):
             removal_policy=RemovalPolicy.DESTROY,
         )
 
+        if config.use_role:
+            role = Role(
+                self,
+                'api-invoke-role',
+                # Role can be assumed by the AWS account, or the newly created user
+                assumed_by=CompositePrincipal(
+                    ArnPrincipal(self.stack.format_arn(service='iam', region='', resource='root')),
+                    ArnPrincipal(user.user_arn),
+                ),
+                description='IAM Role to invoke the API',
+                max_session_duration=Duration.hours(3),
+                role_name=f'{stack_name}@api-invoke-role',
+            )
+            # attach this policy to the role created above
+            policy_kwargs = {'roles': [role]}
+        else:
+            role = None
+            # attach this policy to the user created above
+            policy_kwargs = {'users': [user]}
+
         # create an IAM Policy to invoke the API
         Policy(
             self,
@@ -386,8 +407,7 @@ class IAMSecureRestApi(RestApi):
                     resources=[self.arn_for_execute_api(stage=stage_name)],
                 )
             ],
-            # attach this policy to the user created above
-            users=[user],
+            **policy_kwargs,
         )
 
         # Create usage plan for the API
@@ -429,6 +449,17 @@ class IAMSecureRestApi(RestApi):
             # Needs to be unique per account + region
             export_name=f'{output_name}-{stack_name}',
         )
+
+        if role:
+            # Output the Role ARN (Used for `sts:AssumeRole` API calls, with the IAM User credentials)
+            output_name = 'API:IAM:Role:ARN'
+            CfnOutput(
+                self.stack,
+                output_name,
+                value=role.role_arn,
+                # Needs to be unique per account + region
+                export_name=f'{output_name}-{stack_name}',
+            )
 
     def add_resource_and_lambda_methods(
         self, handler: IFunction, resource_name: str, *methods: Http | str
